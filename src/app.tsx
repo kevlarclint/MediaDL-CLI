@@ -430,7 +430,7 @@ function AppContent({
       <Logo />
       <Gap />
       <Text color={theme.primary}>{TAGLINE}</Text>
-      <Text color={theme.gray} dimColor={theme.dimSecondary}>video · music · playlists · more</Text>
+      <Text color={theme.gray} dimColor={theme.dimSecondary}>youtube · spotify · tiktok · and many more</Text>
       <Gap />
 
       {phase.name === 'input' && (
