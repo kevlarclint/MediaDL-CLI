@@ -1,6 +1,6 @@
 {
   "name": "mediadl-cli",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "download any video from YouTube, Spotify, X, Instagram, Threads & 1800+ sites — right from your terminal.",
   "type": "module",
   "bin": {
@@ -20,7 +20,7 @@
     "start": "node dist/cli.js",
     "prepublishOnly": "npm test && npm run typecheck && npm run build"
   },
-  "author": "Pablo Stanley",
+  "author": "kevlarclint",
   "keywords": [
     "video",
     "downloader",
@@ -50,10 +50,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pablostanley/mediadl.git"
+    "url": "git+https://github.com/kevlarclint/mediadl-cli.git"
   },
-  "homepage": "https://github.com/pablostanley/mediadl#readme",
+  "homepage": "https://github.com/kevlarclint/mediadl-cli#readme",
   "bugs": {
-    "url": "https://github.com/pablostanley/mediadl/issues"
+    "url": "https://github.com/kevlarclint/mediadl-cli/issues"
   }
 }

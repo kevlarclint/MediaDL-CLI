@@ -92,7 +92,7 @@ $ mediadl --theme dark                           # force dark mode
 ## Development
 
 ```sh
-git clone https://github.com/pablostanley/mediadl.git
+git clone https://github.com/kevlarclint/mediadl-cli.git
 cd mediadl
 npm install
 npm run build        # bundle to dist/
