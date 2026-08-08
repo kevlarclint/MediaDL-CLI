@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-const HISTORY_FILE = path.join(os.homedir(), '.config', 'yoinks', 'history.json')
+const HISTORY_FILE = path.join(os.homedir(), '.config', 'mediadl', 'history.json')
 const LIMIT = 50
 
 export function loadHistory(): string[] {

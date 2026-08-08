@@ -7,7 +7,7 @@ import {Readable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
 import {formatBytes} from './format.js'
 
-const YOINKS_DIR = path.join(os.homedir(), '.yoinks', 'bin')
+const YOINKS_DIR = path.join(os.homedir(), '.mediadl', 'bin')
 const RELEASE_BASE = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download'
 
 function ytDlpAssetName(): string {
@@ -127,7 +127,7 @@ export async function probe(ytdlp: string, url: string, signal?: AbortSignal): P
     throw new Error('Could not parse video info from yt-dlp.')
   }
 
-  const infoJsonPath = path.join(os.tmpdir(), `yoinks-info-${process.pid}-${Date.now()}.json`)
+  const infoJsonPath = path.join(os.tmpdir(), `mediadl-info-${process.pid}-${Date.now()}.json`)
   await fs.writeFile(infoJsonPath, stdout)
   return {info, infoJsonPath}
 }

@@ -12,15 +12,16 @@ import {isProbablyUrl} from './lib/platforms.js'
 const VERSION: string = createRequire(import.meta.url)('../package.json').version
 
 const HELP = `
-  yoinks — yoink any video. paste. yoink. done.
+  mediadl — download media. simple, fast, local.
 
   Usage
-    $ yoinks [url]
+    $ mediadl [url]
 
   Examples
-    $ yoinks https://youtu.be/dQw4w9WgXcQ
-    $ yoinks https://x.com/user/status/123456
-    $ yoinks                 (prompts for a url)
+    $ mediadl https://youtu.be/dQw4w9WgXcQ
+    $ mediadl https://x.com/user/status/123456
+    $ mediadl https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
+    $ mediadl                 (prompts for a url)
 
   Options
     --theme <mode>  use auto, light, or dark for this run
@@ -28,13 +29,13 @@ const HELP = `
     -v, --version   show version
 
   Downloads are saved to ~/Downloads.
-  Powered by yt-dlp — YouTube, X, Instagram, Threads, TikTok & 1800+ sites.
+  Powered by yt-dlp & spotdl — YouTube, Spotify, X, Instagram & 1800+ sites.
 `
 
 const args = parseArgs(process.argv.slice(2))
 
 if (args.error) {
-  console.error(`yoinks: ${args.error}\nTry “yoinks --help” for usage.`)
+  console.error(`mediadl: ${args.error}\nTry “mediadl --help” for usage.`)
   process.exit(1)
 }
 
@@ -95,5 +96,5 @@ await waitUntilExit()
 
 if (isTTY) leaveAltScreen()
 if (outcome.filepath) {
-  console.log(`✓ yoinked → ${outcome.filepath}`)
+  console.log(`✓ downloaded → ${outcome.filepath}`)
 }

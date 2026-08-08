@@ -3,9 +3,9 @@ import {Box, Text} from 'ink'
 import {type Theme, useTheme} from '../theme.js'
 
 const ART = [
-  '▓ ▓ █▀█ ▀█▀ █▀▄█ █ █ █▀▀',
-  '▀█▀ █ ▓  ▓  █  ▓ ▓▀▄ ▀▀▓',
-  ' ▀  ▀▀▀ ▀▀▀ ▀  ▀ ▀ ▀ ▀▀▀',
+  '█▄█ █▀▀ █▀▄ ▀█▀ █▀█ █▀▄ █  ',
+  '█ █ █▀▀ █ █  █  █▀█ █ █ █  ',
+  '▀ ▀ ▀▀▀ ▀▀  ▀▀▀ ▀ ▀ ▀▀  ▀▀▀',
 ]
 const GRID = ART.map(line => [...line])
 const ROWS = GRID.length

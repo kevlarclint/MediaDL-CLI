@@ -1,10 +1,10 @@
 {
-  "name": "yoinks",
-  "version": "0.3.1",
-  "description": "yoink any video from YouTube, X, Instagram, Threads & 1800+ sites — right from your terminal. paste. yoink. done.",
+  "name": "mediadl",
+  "version": "0.1.0",
+  "description": "download any video from YouTube, Spotify, X, Instagram, Threads & 1800+ sites — right from your terminal.",
   "type": "module",
   "bin": {
-    "yoinks": "dist/cli.js"
+    "mediadl": "dist/cli.js"
   },
   "files": [
     "dist"
@@ -50,10 +50,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pablostanley/yoinks.git"
+    "url": "git+https://github.com/pablostanley/mediadl.git"
   },
-  "homepage": "https://github.com/pablostanley/yoinks#readme",
+  "homepage": "https://github.com/pablostanley/mediadl#readme",
   "bugs": {
-    "url": "https://github.com/pablostanley/yoinks/issues"
+    "url": "https://github.com/pablostanley/mediadl/issues"
   }
 }

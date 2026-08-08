@@ -14,7 +14,15 @@ import {TextInput} from './components/text-input.js'
 import {clickTargetAt, findFrameRow, frameRowSpan, type ClickTarget} from './lib/click-map.js'
 import {formatBytes, formatDuration, formatEta, formatSpeed, shortenPath, truncate, wrapText} from './lib/format.js'
 import {addToHistory, loadHistory} from './lib/history.js'
-import {detectPlatform, isProbablyUrl, type Platform} from './lib/platforms.js'
+import {detectPlatform, isProbablyUrl, isSpotifyUrl, type Platform} from './lib/platforms.js'
+import {
+  ensureSpotdl,
+  probeSpotify,
+  downloadSpotify,
+  type SpotifyTrack,
+  type SpotifyProbeResult,
+  type SpotifyDownloadProgress,
+} from './lib/spotdl.js'
 import {useMouseClick} from './lib/use-mouse-click.js'
 import {nextThemeMode, ThemeProvider, type ThemeMode, useTheme} from './theme.js'
 import {
@@ -29,9 +37,9 @@ import {
 } from './lib/ytdlp.js'
 
 const OUT_DIR = path.join(os.homedir(), 'Downloads')
-const YOINK_BUTTON = 'yoink'
-const DONE_LABEL = '↵ yoink another'
-const TAGLINE = 'yoink any video. paste. yoink. done.'
+const DOWNLOAD_BUTTON = 'download'
+const DONE_LABEL = '↵ download another'
+const TAGLINE = 'download media. simple, fast, local.'
 
 const choiceLabel = (choice: DownloadChoice) => `${choice.kind === 'audio' ? '♪ ' : '▶ '}${choice.label}`
 
@@ -83,25 +91,27 @@ function indeterminateMeta(progress: DownloadProgress): string {
   return `${partLabel(progress)}${bytes.padStart(8)}  ${speed.padEnd(10)}`
 }
 
-export type Outcome = {filepath?: string}
+export type Outcome = {filepath?: string; trackCount?: number; folderPath?: string}
 
 type Phase =
   | {name: 'input'; warning?: string}
   | {name: 'probing'; status: string}
   | {name: 'picking'}
+  | {name: 'spotify-confirm'}
   | {
       name: 'downloading'
-      choice: DownloadChoice
+      choice?: DownloadChoice
       progress?: DownloadProgress
       processing: boolean
       refreshing?: boolean
     }
-  | {name: 'done'; filepath: string}
+  | {name: 'spotify-downloading'; progress: SpotifyDownloadProgress}
+  | {name: 'done'; filepath?: string; trackCount?: number; folderPath?: string}
   | {name: 'error'; message: string}
 
 const HINTS: Record<Phase['name'], Array<[string, string]>> = {
   input: [
-    ['↵', 'yoink'],
+    ['↵', 'download'],
     ['^c', 'quit'],
   ],
   probing: [
@@ -110,11 +120,20 @@ const HINTS: Record<Phase['name'], Array<[string, string]>> = {
   ],
   picking: [
     ['↑↓', 'choose'],
-    ['↵', 'yoink'],
+    ['↵', 'download'],
+    ['esc', 'back'],
+    ['^c', 'quit'],
+  ],
+  'spotify-confirm': [
+    ['↵', 'download all'],
     ['esc', 'back'],
     ['^c', 'quit'],
   ],
   downloading: [
+    ['esc', 'cancel'],
+    ['^c', 'quit'],
+  ],
+  'spotify-downloading': [
     ['esc', 'cancel'],
     ['^c', 'quit'],
   ],
@@ -166,9 +185,11 @@ function AppContent({
   const [info, setInfo] = useState<VideoInfo>()
   const [choices, setChoices] = useState<DownloadChoice[]>([])
   const ytdlpRef = useRef('')
+  const spotdlRef = useRef('')
   const highlightRef = useRef(0) // choice under the cursor, for the ↵ hint click
   const infoJsonRef = useRef<string | undefined>(undefined)
   const abortRef = useRef<AbortController | undefined>(undefined)
+  const [spotifyProbe, setSpotifyProbe] = useState<SpotifyProbeResult | undefined>()
   const [phase, setPhase] = useState<Phase>(initialUrl ? {name: 'probing', status: 'warming up…'} : {name: 'input'})
 
   const columns = stdout?.columns && stdout.columns > 0 ? stdout.columns : 80
@@ -180,20 +201,43 @@ function AppContent({
     abortRef.current = controller
     setPlatform(detectPlatform(targetUrl))
     setPhase({name: 'probing', status: 'warming up…'})
+
     try {
-      const ytdlp =
-        ytdlpRef.current ||
-        (await ensureYtDlp(status => setPhase({name: 'probing', status}), controller.signal))
-      ytdlpRef.current = ytdlp
-      if (controller.signal.aborted) return
-      setPhase({name: 'probing', status: 'fetching video info…'})
-      const {info: videoInfo, infoJsonPath} = await probe(ytdlp, targetUrl, controller.signal)
-      if (controller.signal.aborted) return
-      infoJsonRef.current = infoJsonPath
-      setInfo(videoInfo)
-      setChoices(buildChoices(videoInfo))
-      highlightRef.current = 0
-      setPhase({name: 'picking'})
+      if (isSpotifyUrl(targetUrl)) {
+        // Spotify path
+        const spotdl =
+          spotdlRef.current ||
+          (await ensureSpotdl(status => setPhase({name: 'probing', status}), controller.signal))
+        spotdlRef.current = spotdl
+        if (controller.signal.aborted) return
+        setPhase({name: 'probing', status: 'fetching spotify tracks…'})
+        const result = await probeSpotify(spotdl, targetUrl, controller.signal)
+        if (controller.signal.aborted) return
+        setSpotifyProbe(result)
+
+        if (result.tracks.length === 1) {
+          // Single track — skip confirmation, start download
+          handleSpotifyDownload(targetUrl, result)
+        } else {
+          // Playlist/album — show confirmation
+          setPhase({name: 'spotify-confirm'})
+        }
+      } else {
+        // yt-dlp path (unchanged)
+        const ytdlp =
+          ytdlpRef.current ||
+          (await ensureYtDlp(status => setPhase({name: 'probing', status}), controller.signal))
+        ytdlpRef.current = ytdlp
+        if (controller.signal.aborted) return
+        setPhase({name: 'probing', status: 'fetching video info…'})
+        const {info: videoInfo, infoJsonPath} = await probe(ytdlp, targetUrl, controller.signal)
+        if (controller.signal.aborted) return
+        infoJsonRef.current = infoJsonPath
+        setInfo(videoInfo)
+        setChoices(buildChoices(videoInfo))
+        highlightRef.current = 0
+        setPhase({name: 'picking'})
+      }
     } catch (error) {
       if (controller.signal.aborted) return
       setPhase({name: 'error', message: error instanceof Error ? error.message : String(error)})
@@ -210,6 +254,7 @@ function AppContent({
     setPlatform(undefined)
     setInfo(undefined)
     setChoices([])
+    setSpotifyProbe(undefined)
     setPhase({name: 'input'})
   }, [])
 
@@ -225,9 +270,10 @@ function AppContent({
         cycleTheme()
         return
       }
-      if (key.escape && (phase.name === 'picking' || phase.name === 'error' || phase.name === 'done')) resetToInput()
-      if (key.escape && (phase.name === 'probing' || phase.name === 'downloading')) cancelRun()
+      if (key.escape && (phase.name === 'picking' || phase.name === 'spotify-confirm' || phase.name === 'error' || phase.name === 'done')) resetToInput()
+      if (key.escape && (phase.name === 'probing' || phase.name === 'downloading' || phase.name === 'spotify-downloading')) cancelRun()
       if (key.return && (phase.name === 'error' || phase.name === 'done')) resetToInput()
+      if (key.return && phase.name === 'spotify-confirm') handleSpotifyDownload(url, spotifyProbe!)
     },
     {isActive: Boolean(process.stdin.isTTY)},
   )
@@ -235,7 +281,7 @@ function AppContent({
   const handleUrlSubmit = (value: string) => {
     const trimmed = value.trim()
     if (!isProbablyUrl(trimmed)) {
-      setPhase({name: 'input', warning: 'that doesn’t look like a link — paste a full url'})
+      setPhase({name: 'input', warning: 'that doesn\'t look like a link — paste a full url'})
       return
     }
     setUrl(trimmed)
@@ -282,6 +328,43 @@ function AppContent({
     })()
   }
 
+  const handleSpotifyDownload = useCallback((targetUrl: string, probeResult: SpotifyProbeResult) => {
+    const controller = new AbortController()
+    abortRef.current = controller
+    const totalTracks = probeResult.tracks.length
+    const folderName = probeResult.folderName
+    setPhase({
+      name: 'spotify-downloading',
+      progress: {downloaded: 0, total: totalTracks, failed: 0},
+    })
+
+    void (async () => {
+      try {
+        const spotdl = spotdlRef.current
+        if (!spotdl) throw new Error('spotdl not available')
+
+        await downloadSpotify(
+          {spotdl, url: targetUrl, outDir: OUT_DIR, totalTracks, folderName},
+          {
+            onProgress: progress =>
+              setPhase(prev => (prev.name === 'spotify-downloading' ? {...prev, progress} : prev)),
+            onTrackDone: () => {},
+            onError: () => {},
+          },
+          controller.signal,
+        )
+
+        const folderPath = folderName ? path.join(OUT_DIR, folderName) : undefined
+        onOutcome({trackCount: totalTracks, folderPath})
+        setHistory(addToHistory(targetUrl))
+        setPhase({name: 'done', trackCount: totalTracks, folderPath})
+      } catch (error) {
+        if (controller.signal.aborted) return
+        setPhase({name: 'error', message: error instanceof Error ? error.message : String(error)})
+      }
+    })()
+  }, [onOutcome])
+
   let hints: Array<[string, string]> = [...HINTS[phase.name], ['^t', `theme:${theme.mode}`]]
   if (phase.name === 'input' && history.length > 0) {
     hints = [hints[0]!, ['↑', 'history'], ...hints.slice(1)]
@@ -293,10 +376,11 @@ function AppContent({
   const hintAction = (key: string): (() => void) | undefined => {
     if (key === '^c') return () => exit()
     if (key === '^t') return cycleTheme
-    if (key === 'esc') return phase.name === 'probing' || phase.name === 'downloading' ? cancelRun : resetToInput
+    if (key === 'esc') return phase.name === 'probing' || phase.name === 'downloading' || phase.name === 'spotify-downloading' ? cancelRun : resetToInput
     if (key === '↵') {
       if (phase.name === 'input') return () => handleUrlSubmit(urlInput)
       if (phase.name === 'picking') return () => handlePick({value: highlightRef.current})
+      if (phase.name === 'spotify-confirm') return () => handleSpotifyDownload(url, spotifyProbe!)
       if (phase.name === 'error' || phase.name === 'done') return resetToInput
     }
     return undefined // ↑↓ / ↑ stay keyboard-only
@@ -304,12 +388,15 @@ function AppContent({
   const clickTargets: ClickTarget[] = []
   if (phase.name === 'input') {
     // the frame button rows above/below the label are part of the button
-    clickTargets.push({match: `  ${YOINK_BUTTON}  `, padY: 1, action: () => handleUrlSubmit(urlInput)})
+    clickTargets.push({match: `  ${DOWNLOAD_BUTTON}  `, padY: 1, action: () => handleUrlSubmit(urlInput)})
   }
   if (phase.name === 'picking') {
     for (const [index, choice] of choices.entries()) {
       clickTargets.push({match: choiceLabel(choice), action: () => handlePick({value: index})})
     }
+  }
+  if (phase.name === 'spotify-confirm') {
+    clickTargets.push({match: `  ${DOWNLOAD_BUTTON} all  `, padY: 1, action: () => handleSpotifyDownload(url, spotifyProbe!)})
   }
   if (phase.name === 'done') {
     clickTargets.push({match: DONE_LABEL, padX: 4, padY: 1, action: resetToInput})
@@ -326,7 +413,7 @@ function AppContent({
       if (taglineRow > 3 && y - 1 >= taglineRow - 4 && y - 1 <= taglineRow - 2) {
         const span = frameRowSpan(y - 1)
         if (span && x >= span[0] - 1 && x <= span[1] + 1) {
-          if (phase.name === 'probing' || phase.name === 'downloading') cancelRun()
+          if (phase.name === 'probing' || phase.name === 'downloading' || phase.name === 'spotify-downloading') cancelRun()
           else if (phase.name !== 'input') resetToInput()
           return
         }
@@ -336,17 +423,19 @@ function AppContent({
     Boolean(process.stdin.isTTY),
   )
 
+  const spotifyTotalDuration = spotifyProbe?.tracks.reduce((sum, t) => sum + (t.duration ?? 0), 0) ?? 0
+
   return (
     <FullScreen>
       <Logo />
       <Gap />
       <Text color={theme.primary}>{TAGLINE}</Text>
-      <Text color={theme.gray} dimColor={theme.dimSecondary}>youtube · x · instagram · threads · tiktok · +1800 more</Text>
+      <Text color={theme.gray} dimColor={theme.dimSecondary}>video · music · playlists · more</Text>
       <Gap />
 
       {phase.name === 'input' && (
         <Box flexDirection="column" alignItems="center">
-          <FramedInput title="Paste a link" width={boxWidth} button={YOINK_BUTTON}>
+          <FramedInput title="Paste a link" width={boxWidth} button={DOWNLOAD_BUTTON}>
             <TextInput
               value={urlInput}
               onChange={setUrlInput}
@@ -365,14 +454,14 @@ function AppContent({
           ) : clipboardOffered ? (
             <Text color={theme.gray} dimColor={theme.dimSecondary}>link in your clipboard — ⇥ to paste it</Text>
           ) : clipboardAccepted ? (
-            <Text color={theme.gray} dimColor={theme.dimSecondary}>from your clipboard — ↵ to yoink it</Text>
+            <Text color={theme.gray} dimColor={theme.dimSecondary}>from your clipboard — ↵ to download it</Text>
           ) : null}
         </Box>
       )}
 
       {phase.name === 'probing' && (
         <Box flexDirection="column" alignItems="center">
-          <FramedInput title={platform ? platform.label : 'Paste a link'} width={boxWidth} button={YOINK_BUTTON} buttonDim>
+          <FramedInput title={platform ? platform.label : 'Paste a link'} width={boxWidth} button={DOWNLOAD_BUTTON} buttonDim>
             <Text color={theme.gray} dimColor={theme.dimSecondary}>{url.length > boxWidth - 8 ? `${url.slice(0, boxWidth - 9)}…` : url}</Text>
           </FramedInput>
         </Box>
@@ -411,11 +500,50 @@ function AppContent({
         </Box>
       )}
 
+      {phase.name === 'spotify-confirm' && spotifyProbe && (
+        <Box flexDirection="column" alignItems="center" width={contentWidth}>
+          <Panel title="Spotify" width={Math.min(56, contentWidth)}>
+            <Box flexDirection="column">
+              {spotifyProbe.name && (
+                <Text bold color={theme.primary}>{spotifyProbe.name}</Text>
+              )}
+              <Text color={theme.gray} dimColor={theme.dimSecondary}>
+                {spotifyProbe.tracks.length} track{spotifyProbe.tracks.length !== 1 ? 's' : ''}
+                {spotifyTotalDuration > 0 ? ` · ${formatDuration(spotifyTotalDuration)}` : ''}
+              </Text>
+              <Gap />
+              <Box flexDirection="column" maxHeight={Math.min(spotifyProbe.tracks.length, 10)}>
+                {spotifyProbe.tracks.slice(0, 10).map((track, i) => (
+                  <Text key={i} color={theme.gray} dimColor={theme.dimSecondary}>
+                    {`  ${i + 1}. ${truncate(track.artist, 20)} — ${truncate(track.title, 28)}`}
+                  </Text>
+                ))}
+                {spotifyProbe.tracks.length > 10 && (
+                  <Text color={theme.gray} dimColor={theme.dimSecondary}>
+                    {`  … and ${spotifyProbe.tracks.length - 10} more`}
+                  </Text>
+                )}
+              </Box>
+            </Box>
+          </Panel>
+          <Gap />
+          <Box
+            borderStyle="round"
+            borderColor={theme.gray}
+            borderDimColor={theme.dimSecondary}
+            borderBackgroundColor={theme.background}
+            paddingX={3}
+          >
+            <Text bold color={theme.primary}>{DOWNLOAD_BUTTON} all</Text>
+          </Box>
+        </Box>
+      )}
+
       {phase.name === 'downloading' && (
         <Box flexDirection="column" alignItems="center">
           <Text color={theme.gray} dimColor={theme.dimSecondary}>
             {info?.title ? `${truncate(info.title, 42)} · ` : ''}
-            {phase.choice.label}
+            {phase.choice?.label ?? ''}
           </Text>
           <Gap />
           {/* every branch is exactly three rows — bar, gap, meta — so the layout never jumps */}
@@ -464,13 +592,50 @@ function AppContent({
         </Box>
       )}
 
+      {phase.name === 'spotify-downloading' && (
+        <Box flexDirection="column" alignItems="center">
+          <Text color={theme.gray} dimColor={theme.dimSecondary}>
+            {spotifyProbe?.name ?? 'Spotify'} · {phase.progress.total} track{phase.progress.total !== 1 ? 's' : ''}
+          </Text>
+          <Gap />
+          <ProgressBar percent={phase.progress.total > 0 ? phase.progress.downloaded / phase.progress.total : 0} />
+          <Gap />
+          <Text>
+            <Text color={theme.primary}>
+              <Spinner type="dots" />
+            </Text>
+            <Text color={theme.gray} dimColor={theme.dimSecondary}>
+              {' '}
+              {phase.progress.currentTrack
+                ? truncate(phase.progress.currentTrack, 40)
+                : `downloading ${phase.progress.downloaded}/${phase.progress.total}`}
+              {phase.progress.failed > 0 ? ` (${phase.progress.failed} failed)` : ''}
+            </Text>
+          </Text>
+        </Box>
+      )}
+
       {phase.name === 'done' && (
         <Box flexDirection="column" alignItems="center">
-          <Text>
-            <Text bold color={theme.primary}>✓ yoinked! </Text>
-            <Text color={theme.primary}>find your file in:</Text>
-          </Text>
-          <Text color={theme.gray} dimColor={theme.dimSecondary}>{shortenPath(phase.filepath, os.homedir(), 60)}</Text>
+          {phase.trackCount ? (
+            <>
+              <Text>
+                <Text bold color={theme.primary}>✓ downloaded! </Text>
+                <Text color={theme.primary}>{phase.trackCount} track{phase.trackCount !== 1 ? 's' : ''} saved to:</Text>
+              </Text>
+              <Text color={theme.gray} dimColor={theme.dimSecondary}>
+                {shortenPath(phase.folderPath ?? OUT_DIR, os.homedir(), 60)}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text>
+                <Text bold color={theme.primary}>✓ downloaded! </Text>
+                <Text color={theme.primary}>find your file in:</Text>
+              </Text>
+              <Text color={theme.gray} dimColor={theme.dimSecondary}>{shortenPath(phase.filepath ?? '', os.homedir(), 60)}</Text>
+            </>
+          )}
           <Gap />
           <Box
             borderStyle="round"
@@ -508,6 +673,20 @@ function AppContent({
           />
         </>
       ) : null}
+
+      <Box flexGrow={1} />
+
+      <Box flexDirection="column" alignItems="center">
+        <Gap lines={1} />
+        <Text color={theme.gray} dimColor={theme.dimSecondary}>yt-dlp · spotDL · FFmpeg</Text>
+        <Text color={theme.gray} dimColor={theme.dimSecondary}>Built by Clint Lorenzo</Text>
+        <Gap lines={0.5} />
+        <Text color={theme.gray} dimColor={theme.dimSecondary}>────────────────────────────────────────</Text>
+        <Gap lines={0.5} />
+        <Text color={theme.gray} dimColor={theme.dimSecondary}>Based on Yoink</Text>
+        <Text color={theme.gray} dimColor={theme.dimSecondary}>Original by Jaysh Khan</Text>
+        <Text color={theme.gray} dimColor={theme.dimSecondary}>Licensed under MIT</Text>
+      </Box>
     </FullScreen>
   )
 }
