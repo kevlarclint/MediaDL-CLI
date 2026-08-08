@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-    <img src="assets/logo-light.svg" alt="mediadl" width="288">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo.svg">
+    <img src="assets/logo.svg" alt="mediadl" width="288">
   </picture>
 </p>
 
@@ -17,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/Mediadl (2).png" alt="mediadl home screen" width="100%">
+  <img src="assets/2.png" alt="mediadl home screen" width="100%">
 </p>
 
 ---
@@ -56,11 +56,11 @@ $ mediadl --theme dark                           # force dark mode
 ## Screenshots
 
 <p align="center">
-  <img src="assets/Mediadl (1).png" alt="mediadl format picker" width="100%">
+  <img src="assets/1.png" alt="mediadl format picker" width="100%">
 </p>
 
 <p align="center">
-  <img src="assets/Mediadl (3).png" alt="mediadl download progress" width="100%">
+  <img src="assets/3.png" alt="mediadl download progress" width="100%">
 </p>
 
 ## Keyboard Shortcuts
