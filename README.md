@@ -1,5 +1,3 @@
-# mediadl
-
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
@@ -19,7 +17,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/Mediadl (1).png" alt="mediadl home screen" width="100%">
+  <img src="assets/Mediadl (2).png" alt="mediadl home screen" width="100%">
 </p>
 
 ---
@@ -58,7 +56,7 @@ $ mediadl --theme dark                           # force dark mode
 ## Screenshots
 
 <p align="center">
-  <img src="assets/Mediadl (2).png" alt="mediadl format picker" width="100%">
+  <img src="assets/Mediadl (1).png" alt="mediadl format picker" width="100%">
 </p>
 
 <p align="center">
@@ -78,10 +76,10 @@ $ mediadl --theme dark                           # force dark mode
 
 ## How It Works
 
-- **YouTube & 1800+ sites**: Powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp). Standalone binary downloaded to `~/.mediadl/bin` on first run.
-- **Spotify**: Powered by [spotdl](https://github.com/spotDL/spotify-downloader). Auto-installed via pip. Also installs Deno for YouTube downloads.
-- **FFmpeg**: For merging streams and MP3 extraction. Uses system FFmpeg or bundled fallback.
-- **UI**: Built with [Ink](https://github.com/vadimdemedes/ink) (React for the terminal).
+- **YouTube & 1800+ sites** — Powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp). Standalone binary downloaded to `~/.mediadl/bin` on first run.
+- **Spotify** — Powered by [spotdl](https://github.com/spotDL/spotify-downloader). Auto-installed via pip. Also installs Deno for YouTube downloads.
+- **FFmpeg** — For merging streams and MP3 extraction. Uses system FFmpeg or bundled fallback.
+- **UI** — Built with [Ink](https://github.com/vadimdemedes/ink) (React for the terminal).
 
 ## Output Locations
 
@@ -110,10 +108,10 @@ To try it globally: `npm link`, then run `mediadl` anywhere.
 Forked from [yoinks](https://github.com/pablostanley/yoinks) by **Pablo Stanley**.
 
 Built with:
-- [yt-dlp](https://github.com/yt-dlp/yt-dlp): Video downloads
-- [spotdl](https://github.com/spotDL/spotify-downloader): Spotify downloads
-- [FFmpeg](https://ffmpeg.org): Media processing
-- [Ink](https://github.com/vadimdemedes/ink): Terminal UI
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp) — Video downloads
+- [spotdl](https://github.com/spotDL/spotify-downloader) — Spotify downloads
+- [FFmpeg](https://ffmpeg.org) — Media processing
+- [Ink](https://github.com/vadimdemedes/ink) — Terminal UI
 
 ## License
 
