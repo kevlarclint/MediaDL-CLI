@@ -435,7 +435,7 @@ function AppContent({
 
       {phase.name === 'input' && (
         <Box flexDirection="column" alignItems="center">
-          <FramedInput title="Paste a link" width={boxWidth} button={DOWNLOAD_BUTTON}>
+          <FramedInput title="Paste a link/playlist" width={boxWidth} button={DOWNLOAD_BUTTON}>
             <TextInput
               value={urlInput}
               onChange={setUrlInput}
@@ -461,7 +461,7 @@ function AppContent({
 
       {phase.name === 'probing' && (
         <Box flexDirection="column" alignItems="center">
-          <FramedInput title={platform ? platform.label : 'Paste a link'} width={boxWidth} button={DOWNLOAD_BUTTON} buttonDim>
+          <FramedInput title={platform ? platform.label : 'Paste a link/playlist'} width={boxWidth} button={DOWNLOAD_BUTTON} buttonDim>
             <Text color={theme.gray} dimColor={theme.dimSecondary}>{url.length > boxWidth - 8 ? `${url.slice(0, boxWidth - 9)}…` : url}</Text>
           </FramedInput>
         </Box>

@@ -1,115 +1,119 @@
 # mediadl
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-  <img src="assets/logo-light.svg" alt="mediadl" width="288">
-</picture>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+    <img src="assets/logo-light.svg" alt="mediadl" width="288">
+  </picture>
+</p>
 
-download media. simple, fast, local.
+<p align="center">
+  download media. simple, fast, local.<br>
+  <sub>youtube · spotify · tiktok · and many more</sub>
+</p>
 
-Download videos from YouTube, X/Twitter, Instagram, Threads, TikTok and
-1,800+ other sites — right from your terminal. Download songs and playlists
-from Spotify with full metadata. Paste a url, pick a resolution (or
-audio-only mp3), done. No popups, no fake download buttons, no sketchy
-redirects.
+<p align="center">
+  <a href="https://www.npmjs.com/package/mediadl-cli"><img src="https://img.shields.io/npm/v/mediadl-cli?style=flat-square&color=blue" alt="npm version"></a>
+  <a href="https://github.com/pablostanley/mediadl/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/mediadl-cli?style=flat-square&color=green" alt="license"></a>
+  <a href="https://nodejs.org"><img src="https://img.shields.io/badge/node-%3E%3D18-brightgreen?style=flat-square" alt="node version"></a>
+</p>
 
-<img src="assets/home.png" alt="mediadl home screen — paste a link and hit download" width="100%">
+<p align="center">
+  <img src="assets/Mediadl (1).png" alt="mediadl home screen" width="100%">
+</p>
+
+---
+
+Download videos from YouTube, TikTok, Instagram, X/Twitter, Threads and
+1,800+ other sites. Download songs and playlists from Spotify with full
+metadata. Paste a link, pick a format, done.
+
+No popups, no fake download buttons, no sketchy redirects.
 
 ## Install
 
 ```sh
-npm install -g mediadl
+npm install -g mediadl-cli
 ```
 
-Or try it without installing anything:
+Or run without installing:
 
 ```sh
-npx mediadl
+npx mediadl-cli
 ```
 
-Requires Node 18+. yt-dlp and ffmpeg are fetched or bundled automatically.
-
-### Spotify support
-
-For Spotify downloads, install [spotdl](https://github.com/spotDL/spotify-downloader):
-
-```sh
-pip install spotdl
-```
+Requires Node 18+. yt-dlp, FFmpeg, spotdl, and Deno are installed automatically on first use.
 
 ## Usage
 
 ```sh
-$ mediadl https://youtu.be/dQw4w9WgXcQ         # straight to the format picker
+$ mediadl https://youtu.be/dQw4w9WgXcQ         # pick a format, download
 $ mediadl https://open.spotify.com/track/...     # download a single track
-$ mediadl https://open.spotify.com/playlist/...  # download a full playlist
-$ mediadl                                        # prompts for a url
-$ mediadl --theme light                          # force the light palette
+$ mediadl https://open.spotify.com/playlist/...  # download full playlist
+$ mediadl https://www.tiktok.com/...             # download a video
+$ mediadl                                        # prompts for a link
+$ mediadl --theme dark                           # force dark mode
 ```
 
-mediadl takes over the terminal (full-screen, centered — and restores your
-scrollback on exit). Pick a format with ↑/↓ (or j/k, or number keys) and
-hit enter. `esc` goes back, `^c` quits. Or just use the mouse — the download
-button, the format list and the footer hints are all clickable, and
-clicking the logo takes you back home. Files are saved to `~/Downloads`,
-and the file path is printed to your terminal when you're done.
+## Screenshots
 
-For Spotify URLs, mediadl automatically uses spotdl — single tracks download
-directly, playlists show a preview and download all tracks with metadata.
+<p align="center">
+  <img src="assets/Mediadl (2).png" alt="mediadl format picker" width="100%">
+</p>
 
-The default `auto` theme uses your terminal's own foreground and background,
-so it follows light and dark terminal themes without guessing. Press `^t` or
-click the theme control in the footer to cycle through `auto`, `light`, and
-`dark` for the current session. Use `--theme auto`, `--theme light`, or
-`--theme dark` to choose the starting theme for one launch.
+<p align="center">
+  <img src="assets/Mediadl (3).png" alt="mediadl download progress" width="100%">
+</p>
 
-<img src="assets/download-options.png" alt="mediadl format picker — resolutions with estimated file sizes, plus audio-only mp3" width="100%">
+## Keyboard Shortcuts
 
-## How it works
+| Key | Action |
+|-----|--------|
+| `up/down` or `j/k` | Navigate formats |
+| `Enter` | Confirm / Download |
+| `Esc` | Go back |
+| `Tab` | Paste clipboard URL |
+| `Ctrl+T` | Cycle theme |
+| `Ctrl+C` | Quit |
 
-- For YouTube and 1,800+ sites: powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp). On first run,
-  mediadl downloads the standalone yt-dlp binary to `~/.mediadl/bin` —
-  no Python required. If you already have yt-dlp installed, it uses yours.
-- For Spotify: powered by [spotdl](https://github.com/spotDL/spotify-downloader).
-  Install it with `pip install spotdl`. Handles single tracks, playlists,
-  and albums with full metadata.
-- ffmpeg (needed for merging high-res streams and mp3 extraction) is found
-  on your PATH, with `ffmpeg-static` as a bundled fallback.
-- The UI is [Ink](https://github.com/vadimdemedes/ink) — React for the
-  terminal.
+## How It Works
+
+- **YouTube & 1800+ sites**: Powered by [yt-dlp](https://github.com/yt-dlp/yt-dlp). Standalone binary downloaded to `~/.mediadl/bin` on first run.
+- **Spotify**: Powered by [spotdl](https://github.com/spotDL/spotify-downloader). Auto-installed via pip. Also installs Deno for YouTube downloads.
+- **FFmpeg**: For merging streams and MP3 extraction. Uses system FFmpeg or bundled fallback.
+- **UI**: Built with [Ink](https://github.com/vadimdemedes/ink) (React for the terminal).
+
+## Output Locations
+
+| Source | Location |
+|--------|----------|
+| YouTube, TikTok, etc. | `~/Downloads/` |
+| Spotify single track | `~/Downloads/` |
+| Spotify playlist/album | `~/Downloads/<Playlist Name>/` |
 
 ## Development
 
 ```sh
+git clone https://github.com/pablostanley/mediadl.git
+cd mediadl
 npm install
-npm run build        # bundle to dist/ with tsup
+npm run build        # bundle to dist/
 npm run dev          # rebuild on change
-node dist/cli.js <url>
-npm run typecheck
+npm run test         # run tests
+npm run typecheck    # check types
 ```
 
-To try it as a global command without publishing: `npm link`, then run
-`mediadl` anywhere.
-
-## Roadmap
-
-- [ ] `--best` / `--mp3` flags to skip the picker (scriptable mode)
-- [ ] `-o <dir>` to choose the output folder
-- [ ] Playlist / thread-with-multiple-videos support
-- [ ] Clipboard detection: launch bare and auto-suggest the url you copied
-- [ ] Self-update for the bundled yt-dlp binary (`yt-dlp -U`)
-- [x] Publish to npm (`npm i -g mediadl` / `npx mediadl`)
-- [ ] `curl mediadl.sh | sh` installer
-
-## A note on fair use
-
-mediadl is a personal-archiving tool. Downloading content may violate a
-platform's terms of service — only download what you have the right to
-keep, and be excellent to creators.
+To try it globally: `npm link`, then run `mediadl` anywhere.
 
 ## Credits
 
-Forked from [yoinks](https://github.com/pablostanley/yoinks) by Pablo Stanley.
+Forked from [yoinks](https://github.com/pablostanley/yoinks) by **Pablo Stanley**.
+
+Built with:
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp): Video downloads
+- [spotdl](https://github.com/spotDL/spotify-downloader): Spotify downloads
+- [FFmpeg](https://ffmpeg.org): Media processing
+- [Ink](https://github.com/vadimdemedes/ink): Terminal UI
 
 ## License
 
