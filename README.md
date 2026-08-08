@@ -1,7 +1,6 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
-    <img src="assets/logo-dark.svg" alt="mediadl" width="288">
+    <img width="150" height="150" alt="mediadl-logo" src="https://github.com/user-attachments/assets/6a89d29c-2a2f-4c10-843a-fdd3abf0de58" />
   </picture>
 </p>
 
