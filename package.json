@@ -1,6 +1,6 @@
 {
   "name": "mediadl-cli",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "download any video from YouTube, Spotify, X, Instagram, Threads & 1800+ sites — right from your terminal.",
   "type": "module",
   "bin": {
