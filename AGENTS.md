@@ -42,10 +42,13 @@ No lint or format scripts are defined. `prepublishOnly` runs test → typecheck 
 ## Gotchas
 
 - **Alt screen**: The app takes over the terminal with `\x1b[?1049h`. Crash handlers in `cli.tsx` restore the screen before printing errors — don't add bare `console.log` in hot paths or errors will be swallowed.
-- **Click targets** are found by text content in the rendered frame (`lib/click-map.ts`). If you rename visible label strings (e.g. "download" button, footer hints), click targets in `app.tsx` must be updated to match.
+- **Click targets** are found by text content in the rendered frame (`lib/click-map.ts`). If you rename visible label strings (e.g. "download" button, footer hints, "try again"), click targets in `app.tsx` must be updated to match.
+- **Retry on error**: Pressing Enter in the error phase re-probes the same URL (`lastUrlRef`). The hint reads "↵ try again". If you change error-phase behavior, update both `useInput` and `hintAction`.
+- **Temp file cleanup**: `handlePick` has a `finally` block that deletes the probe's temp JSON file (`infoJsonRef`). Don't remove it — without it, `/tmp` accumulates `mediadl-info-*.json` files.
 - **yt-dlp progress parsing** uses a custom template with `YOINK|` prefix. The download function splits stdout on this prefix — don't add other stdout lines that start with `YOINK|`.
 - **ffmpeg**: `findFfmpeg()` returns `undefined` when ffmpeg is on PATH (yt-dlp finds it itself) and only returns an explicit path for the `ffmpeg-static` fallback. This is intentional.
 - **Panel test** sets `FORCE_COLOR=3` and deletes `NO_COLOR` to make Chalk's color support deterministic. Restore env vars in `finally` if you modify this test.
 - **tsup config** adds `#!/usr/bin/env node` shebang to the output — `dist/cli.js` is directly executable.
 - **Downloads** go to `~/Downloads` with filenames truncated to 60 chars (`%(title).60s.%(ext)s`).
 - **spotdl**: Must be installed separately (`pip install spotdl`). The app checks PATH and throws a helpful error if missing. spotdl uses yt-dlp + ffmpeg under the hood.
+- **Footer text** uses hardcoded `#52525b` instead of `theme.gray` so it stays dim regardless of theme. Don't change it to `theme.gray`.
