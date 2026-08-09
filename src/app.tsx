@@ -1,5 +1,4 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react'
-import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import {Box, Text, useApp, useInput, useStdout} from 'ink'
@@ -190,7 +189,6 @@ function AppContent({
   const highlightRef = useRef(0) // choice under the cursor, for the ↵ hint click
   const infoJsonRef = useRef<string | undefined>(undefined)
   const abortRef = useRef<AbortController | undefined>(undefined)
-  const lastUrlRef = useRef('')
   const [spotifyProbe, setSpotifyProbe] = useState<SpotifyProbeResult | undefined>()
   const [phase, setPhase] = useState<Phase>(initialUrl ? {name: 'probing', status: 'warming up…'} : {name: 'input'})
 
@@ -247,10 +245,7 @@ function AppContent({
   }, [])
 
   useEffect(() => {
-    if (initialUrl) {
-      lastUrlRef.current = initialUrl
-      void startProbe(initialUrl)
-    }
+    if (initialUrl) void startProbe(initialUrl)
   }, [initialUrl, startProbe])
 
   const resetToInput = useCallback(() => {
@@ -277,11 +272,7 @@ function AppContent({
       }
       if (key.escape && (phase.name === 'picking' || phase.name === 'spotify-confirm' || phase.name === 'error' || phase.name === 'done')) resetToInput()
       if (key.escape && (phase.name === 'probing' || phase.name === 'downloading' || phase.name === 'spotify-downloading')) cancelRun()
-      if (key.return && phase.name === 'done') resetToInput()
-      if (key.return && phase.name === 'error' && lastUrlRef.current) {
-        setUrlInput(lastUrlRef.current)
-        void startProbe(lastUrlRef.current)
-      }
+      if (key.return && (phase.name === 'error' || phase.name === 'done')) resetToInput()
       if (key.return && phase.name === 'spotify-confirm') handleSpotifyDownload(url, spotifyProbe!)
     },
     {isActive: Boolean(process.stdin.isTTY)},
@@ -293,7 +284,6 @@ function AppContent({
       setPhase({name: 'input', warning: 'that doesn\'t look like a link — paste a full url'})
       return
     }
-    lastUrlRef.current = trimmed
     setUrl(trimmed)
     void startProbe(trimmed)
   }
@@ -334,12 +324,6 @@ function AppContent({
       } catch (error) {
         if (controller.signal.aborted) return
         setPhase({name: 'error', message: error instanceof Error ? error.message : String(error)})
-      } finally {
-        // clean up the temp info json file from the probe
-        if (infoJsonRef.current) {
-          void fs.rm(infoJsonRef.current, {force: true}).catch(() => {})
-          infoJsonRef.current = undefined
-        }
       }
     })()
   }
@@ -397,8 +381,7 @@ function AppContent({
       if (phase.name === 'input') return () => handleUrlSubmit(urlInput)
       if (phase.name === 'picking') return () => handlePick({value: highlightRef.current})
       if (phase.name === 'spotify-confirm') return () => handleSpotifyDownload(url, spotifyProbe!)
-      if (phase.name === 'done') return resetToInput
-      if (phase.name === 'error') return lastUrlRef.current ? () => { setUrlInput(lastUrlRef.current); void startProbe(lastUrlRef.current) } : resetToInput
+      if (phase.name === 'error' || phase.name === 'done') return resetToInput
     }
     return undefined // ↑↓ / ↑ stay keyboard-only
   }
